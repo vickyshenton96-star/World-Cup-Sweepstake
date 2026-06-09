@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Cup 2026 Sweepstake</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a1628; color: #fff; min-height: 100vh; }
+
+  header { background: #0d1f3c; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
+  header .trophy { font-size: 1.8rem; }
+  header h1 { font-size: 1.2rem; font-weight: 600; }
+  header p { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; margin-left: auto; flex-shrink: 0; transition: background 0.3s; }
+  .sync-dot.synced { background: #34d399; }
+  .sync-dot.syncing { background: #fbbf24; animation: pulse 1s infinite; }
+  .sync-dot.error { background: #f87171; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 1.5rem; }
+
+  .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-green { background: #059669; color: #fff; }
+  .btn-green:hover { background: #047857; }
+  .btn-danger { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .btn-danger:hover { background: rgba(239,68,68,0.3); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; }
+  .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem; }
+
+  .info-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.6; }
+  .info-box strong { color: rgba(255,255,255,0.85); }
+  .info-box code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; color: #93c5fd; }
+  .warn-box { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
+
+  /* Join screen */
+  .join-screen { max-width: 480px; margin: 2rem auto; text-align: center; }
+  .join-screen h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .join-screen p { color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-bottom: 1.5rem; line-height: 1.6; }
+  .join-input { width: 100%; padding: 0.75rem 1rem; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 1rem; outline: none; margin-bottom: 0.75rem; text-align: center; }
+  .join-input:focus { border-color: rgba(99,102,241,0.6); }
+
+  /* Slots grid */
+  .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-bottom: 1rem; }
+  .slot { border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.82rem; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 6px; }
+  .slot.empty { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.25); }
+  .slot.taken { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.3); color: #93c5fd; }
+  .slot.mine  { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: #34d399; font-weight: 600; }
+  .slot-num { font-size: 0.68rem; color: inherit; opacity: 0.5; }
+
+  /* Spin area */
+  .spin-area { text-align: center; padding: 0.5rem 0; }
+  .spin-area .label { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-bottom: 0.25rem; }
+  .spin-area .tier-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; }
+  .wheel-wrap { position: relative; width: 320px; height: 320px; margin: 0 auto 1.25rem; }
+  canvas#wheel { border-radius: 50%; display: block; }
+  .pointer { position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent; border-bottom: 32px solid #fff; transform: translate(-50%, -88%); filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); pointer-events: none; }
+  .spin-btn { font-size: 1rem; padding: 0.75rem 2.5rem; background: linear-gradient(135deg, #2563eb, #7c3aed); border: none; border-radius: 50px; color: #fff; cursor: pointer; font-weight: 700; letter-spacing: 0.04em; box-shadow: 0 4px 20px rgba(37,99,235,0.4); transition: all 0.15s; }
+  .spin-btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .spin-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .result-banner { background: linear-gradient(135deg, rgba(37,99,235,0.2), rgba(124,58,237,0.2)); border: 1px solid rgba(99,102,241,0.4); border-radius: 12px; padding: 1rem 1.5rem; margin: 1rem auto; max-width: 380px; text-align: center; }
+  .result-banner .team-name { font-size: 1.4rem; font-weight: 700; margin: 0.25rem 0; }
+  .tier-badge { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.05em; }
+  .tier1-badge { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+  .tier2-badge { background: rgba(148,163,184,0.2); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
+  .tier3-badge { background: rgba(180,83,9,0.2);  color: #d97706; border: 1px solid rgba(180,83,9,0.3); }
+  .tier4-badge { background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+
+  .my-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 0.75rem; }
+  .my-team-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.82rem; }
+  .my-team-card .tc-tier { font-size: 0.65rem; color: rgba(255,255,255,0.35); margin-bottom: 3px; }
+  .my-team-card .tc-name { font-weight: 600; }
+
+  .progress-bar { background: rgba(255,255,255,0.08); border-radius: 4px; height: 5px; margin: 0.5rem 0 1rem; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,#2563eb,#7c3aed); border-radius: 4px; transition: width 0.4s; }
+
+  /* Results table */
+  .results-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .results-table th { text-align: left; padding: 0.5rem 0.6rem; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.35); border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .results-table td { padding: 0.55rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .results-table tr:last-child td { border-bottom: none; }
+
+  .complete-banner { background: linear-gradient(135deg,rgba(16,185,129,0.2),rgba(5,150,105,0.2)); border: 1px solid rgba(16,185,129,0.4); border-radius: 12px; padding: 1.2rem 1.5rem; text-align: center; margin-bottom: 1.5rem; }
+  .complete-banner h2 { font-size: 1.1rem; color: #34d399; margin-bottom: 0.25rem; }
+  .complete-banner p { font-size: 0.8rem; color: rgba(255,255,255,0.5); }
+
+  .loading-overlay { position: fixed; inset: 0; background: rgba(10,22,40,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 0.75rem; }
+  .loading-overlay p { color: rgba(255,255,255,0.6); font-size: 0.9rem; }
+  .spinner { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #60a5fa; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 4px; margin-bottom: 1.5rem; }
+  .tab { flex: 1; padding: 0.55rem; border: none; background: transparent; color: rgba(255,255,255,0.5); border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.15s; }
+  .tab.active { background: #1e3a6e; color: #fff; }
+
+  .admin-badge { font-size: 0.65rem; background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); padding: 2px 8px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+
+  .teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px,1fr)); gap: 8px; }
+  .team-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.55rem 0.75rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; }
+  .team-rank { font-size: 0.68rem; color: rgba(255,255,255,0.3); margin-right: 5px; }
+
+  .waiting-screen { text-align: center; padding: 2.5rem 1rem; }
+  .waiting-screen .big { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .waiting-screen h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .waiting-screen p { font-size: 0.82rem; color: rgba(255,255,255,0.45); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <p>Loading sweepstake...</p>
+</div>
+
+<header>
+  <div class="trophy">🏆</div>
+  <div>
+    <h1>World Cup 2026 Sweepstake</h1>
+    <p id="header-sub">48 teams · 12 players · 4 teams each</p>
+  </div>
+  <div id="sync-dot" class="sync-dot" title="Sync status"></div>
+</header>
+
+<div class="container" id="main-container" style="display:none;">
+
+  <!-- JOIN SCREEN (shown before player has claimed a slot) -->
+  <div id="join-screen" style="display:none;">
+    <div class="join-screen">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem;">⚽</div>
+      <h2>Join the Sweepstake</h2>
+      <p>Enter your name to claim one of the 12 slots. Once all players have joined and the host clicks Start, you'll spin to get your teams.</p>
+      <input class="join-input" id="join-name-input" type="text" placeholder="Your name" maxlength="30" />
+      <button class="btn btn-green" style="width:100%;padding:0.75rem;" onclick="claimSlot()">Join →</button>
+      <p id="join-error" style="color:#f87171;font-size:0.8rem;margin-top:0.5rem;min-height:1.2em;"></p>
+    </div>
+    <div class="card">
+      <h2>Players joined <span style="color:rgba(255,255,255,0.3);font-weight:400;font-size:0.85rem;" id="slot-count-join"></span></h2>
+      <div class="slots-grid" id="slots-grid-join"></div>
+    </div>
+  </div>
+
+  <!-- MAIN APP (shown after player has joined) -->
+  <div id="app-screen" style="display:none;">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('lobby')">Lobby</button>
+      <button class="tab" onclick="showTab('spin')">My Spin</button>
+      <button class="tab" onclick="showTab('results')">Results</button>
+      <button class="tab" onclick="showTab('teams')">All Teams</button>
+    </div>
+
+    <div id="tab-lobby">
+      <div class="card">
+        <h2>Players <span style="color:rgba(255,255,255,0.3);font-weight:400;font-size:0.85rem;" id="slot-count-lobby"></span></h2>
+        <div class="slots-grid" id="slots-grid-lobby"></div>
+        <div id="lobby-actions" style="margin-top:1rem;"></div>
+      </div>
+      <div id="lobby-status"></div>
+    </div>
+
+    <div id="tab-spin" style="display:none;">
+      <div id="spin-ui"></div>
+    </div>
+
+    <div id="tab-results" style="display:none;">
+      <div id="results-ui"></div>
+    </div>
+
+    <div id="tab-teams" style="display:none;">
+      <div id="teams-ui"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://jdumyutfurebxywujeen.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdW15dXRmdXJlYnh5d3VqZWVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTYyMDcsImV4cCI6MjA5NjU3MjIwN30.0mLF0d5YJS549ukWI5hgBJGz2Y-J4pGNORf4cz0aREs';
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ALL_TEAMS = [
+  { rank:1,  name:"France",        flag:"🇫🇷", tier:1 },
+  { rank:2,  name:"Spain",         flag:"🇪🇸", tier:1 },
+  { rank:3,  name:"Argentina",     flag:"🇦🇷", tier:1 },
+  { rank:4,  name:"England",       flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", tier:1 },
+  { rank:5,  name:"Portugal",      flag:"🇵🇹", tier:1 },
+  { rank:6,  name:"Brazil",        flag:"🇧🇷", tier:1 },
+  { rank:7,  name:"Netherlands",   flag:"🇳🇱", tier:1 },
+  { rank:8,  name:"Morocco",       flag:"🇲🇦", tier:1 },
+  { rank:9,  name:"Belgium",       flag:"🇧🇪", tier:1 },
+  { rank:10, name:"Germany",       flag:"🇩🇪", tier:1 },
+  { rank:11, name:"Croatia",       flag:"🇭🇷", tier:1 },
+  { rank:12, name:"Colombia",      flag:"🇨🇴", tier:1 },
+  { rank:13, name:"Senegal",       flag:"🇸🇳", tier:2 },
+  { rank:14, name:"Mexico",        flag:"🇲🇽", tier:2 },
+  { rank:15, name:"USA",           flag:"🇺🇸", tier:2 },
+  { rank:16, name:"Uruguay",       flag:"🇺🇾", tier:2 },
+  { rank:17, name:"Japan",         flag:"🇯🇵", tier:2 },
+  { rank:18, name:"Switzerland",   flag:"🇨🇭", tier:2 },
+  { rank:19, name:"Iran",          flag:"🇮🇷", tier:2 },
+  { rank:20, name:"Turkey",        flag:"🇹🇷", tier:2 },
+  { rank:21, name:"Ecuador",       flag:"🇪🇨", tier:2 },
+  { rank:22, name:"Austria",       flag:"🇦🇹", tier:2 },
+  { rank:23, name:"South Korea",   flag:"🇰🇷", tier:2 },
+  { rank:24, name:"Australia",     flag:"🇦🇺", tier:2 },
+  { rank:25, name:"Algeria",       flag:"🇩🇿", tier:3 },
+  { rank:26, name:"Egypt",         flag:"🇪🇬", tier:3 },
+  { rank:27, name:"Canada",        flag:"🇨🇦", tier:3 },
+  { rank:28, name:"Norway",        flag:"🇳🇴", tier:3 },
+  { rank:29, name:"Panama",        flag:"🇵🇦", tier:3 },
+  { rank:30, name:"Ivory Coast",   flag:"🇨🇮", tier:3 },
+  { rank:31, name:"Sweden",        flag:"🇸🇪", tier:3 },
+  { rank:32, name:"Paraguay",      flag:"🇵🇾", tier:3 },
+  { rank:33, name:"Czechia",       flag:"🇨🇿", tier:3 },
+  { rank:34, name:"Scotland",      flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿", tier:3 },
+  { rank:35, name:"Tunisia",       flag:"🇹🇳", tier:3 },
+  { rank:36, name:"DR Congo",      flag:"🇨🇩", tier:3 },
+  { rank:37, name:"Uzbekistan",    flag:"🇺🇿", tier:4 },
+  { rank:38, name:"Qatar",         flag:"🇶🇦", tier:4 },
+  { rank:39, name:"Iraq",          flag:"🇮🇶", tier:4 },
+  { rank:40, name:"South Africa",  flag:"🇿🇦", tier:4 },
+  { rank:41, name:"Saudi Arabia",  flag:"🇸🇦", tier:4 },
+  { rank:42, name:"Jordan",        flag:"🇯🇴", tier:4 },
+  { rank:43, name:"Bosnia & Herz.",flag:"🇧🇦", tier:4 },
+  { rank:44, name:"Cape Verde",    flag:"🇨🇻", tier:4 },
+  { rank:45, name:"Ghana",         flag:"🇬🇭", tier:4 },
+  { rank:46, name:"Curacao",       flag:"🇨🇼", tier:4 },
+  { rank:47, name:"Haiti",         flag:"🇭🇹", tier:4 },
+  { rank:48, name:"New Zealand",   flag:"🇳🇿", tier:4 },
+];
+
+const TIER_COLORS = ['#fbbf24','#94a3b8','#d97706','#a78bfa'];
+const TIER_NAMES  = ['Tier 1 — Top 12','Tier 2 — 13 to 24','Tier 3 — 25 to 36','Tier 4 — 37 to 48'];
+const TIER_BADGE  = ['tier1-badge','tier2-badge','tier3-badge','tier4-badge'];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+// Shared (lives in Supabase):
+// gs.phase: 'joining' | 'spinning' | 'done'
+// gs.slots: [{name, assignments:[], nextTier:1}] (12 slots, null name = empty)
+// gs.remainingByTier: {1:[...],2:[...],3:[...],4:[...]}
+// gs.adminName: first person to join is admin
+
+let gs = {
+  phase: 'joining',
+  slots: Array(12).fill(null).map(() => ({ name: null, assignments: [], nextTier: 1 })),
+  remainingByTier: {
+    1: ALL_TEAMS.filter(t=>t.tier===1),
+    2: ALL_TEAMS.filter(t=>t.tier===2),
+    3: ALL_TEAMS.filter(t=>t.tier===3),
+    4: ALL_TEAMS.filter(t=>t.tier===4),
+  },
+  adminName: null,
+};
+
+// Local only:
+let myName = null;   // set after joining
+let mySlot = null;   // index 0-11
+let spinAngle = 0;
+let pollTimer = null;
+
+const isConfigured = SUPABASE_URL !== 'YOUR_PROJECT_URL' && SUPABASE_KEY !== 'YOUR_ANON_KEY';
+
+// ── Supabase ──────────────────────────────────────────────────────────────────
+function sbH() {
+  return { 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY };
+}
+async function dbLoad() {
+  const r = await fetch(SUPABASE_URL+'/rest/v1/sweepstake?id=eq.main&select=state', { headers:sbH() });
+  if (!r.ok) throw new Error('load failed '+r.status);
+  const rows = await r.json();
+  if (rows.length && rows[0].state && rows[0].state.phase) {
+    gs = rows[0].state;
+  }
+}
+async function dbSave() {
+  setSyncDot('syncing');
+  const r = await fetch(SUPABASE_URL+'/rest/v1/sweepstake?id=eq.main', {
+    method:'PATCH',
+    headers:{ ...sbH(), 'Prefer':'return=minimal' },
+    body: JSON.stringify({ state: gs, updated_at: new Date().toISOString() }),
+  });
+  if (!r.ok) { setSyncDot('error'); throw new Error('save failed'); }
+  setSyncDot('synced');
+}
+function setSyncDot(s) {
+  const d = document.getElementById('sync-dot');
+  d.className = 'sync-dot ' + s;
+}
+
+// ── Poll for updates ──────────────────────────────────────────────────────────
+function startPolling() {
+  if (!isConfigured) return;
+  pollTimer = setInterval(async () => {
+    try {
+      const prev = JSON.stringify(gs);
+      await dbLoad();
+      if (JSON.stringify(gs) !== prev) rerender();
+    } catch(e) {}
+  }, 4000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  if (isConfigured) {
+    try { await dbLoad(); setSyncDot('synced'); }
+    catch(e) { setSyncDot('error'); }
+  }
+  // Restore myName from sessionStorage so refresh doesn't kick you out
+  const saved = sessionStorage.getItem('wc2026_me');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    myName = parsed.name;
+    mySlot = gs.slots.findIndex(s => s.name === myName);
+    if (mySlot === -1) { myName = null; mySlot = null; sessionStorage.removeItem('wc2026_me'); }
+  }
+  document.getElementById('loading-overlay').style.display = 'none';
+  document.getElementById('main-container').style.display = '';
+  rerender();
+  startPolling();
+}
+
+// ── Master render ─────────────────────────────────────────────────────────────
+function rerender() {
+  if (!myName) {
+    document.getElementById('join-screen').style.display = '';
+    document.getElementById('app-screen').style.display = 'none';
+    renderJoinScreen();
+  } else {
+    document.getElementById('join-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = '';
+    renderLobby();
+    // re-render whichever tab is active
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab) {
+      const t = activeTab.textContent.trim().toLowerCase().replace(' ','');
+      if (t === 'myspin' || t === 'spin') renderSpinUI();
+      if (t === 'results') renderResults();
+    }
+  }
+}
+
+function showTab(tab) {
+  ['lobby','spin','results','teams'].forEach(t => {
+    const el = document.getElementById('tab-'+t);
+    if (el) el.style.display = t===tab ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    el.classList.toggle('active', ['lobby','spin','results','teams'][i]===tab);
+  });
+  if (tab==='spin')    renderSpinUI();
+  if (tab==='results') renderResults();
+  if (tab==='teams')   renderTeams();
+}
+
+// ── Join screen ───────────────────────────────────────────────────────────────
+function renderJoinScreen() {
+  renderSlotsGrid('slots-grid-join');
+  const taken = gs.slots.filter(s=>s.name).length;
+  document.getElementById('slot-count-join').textContent = taken+' / 12';
+}
+
+async function claimSlot() {
+  const name = document.getElementById('join-name-input').value.trim();
+  const errEl = document.getElementById('join-error');
+  if (!name) { errEl.textContent = 'Please enter your name.'; return; }
+  if (isConfigured) {
+    try { await dbLoad(); } catch(e) {}
+  }
+  if (gs.phase !== 'joining') { errEl.textContent = 'The sweepstake has already started — ask the host to reset it.'; return; }
+  if (gs.slots.every(s=>s.name)) { errEl.textContent = 'All 12 slots are taken!'; return; }
+  if (gs.slots.some(s=>s.name && s.name.toLowerCase()===name.toLowerCase())) {
+    errEl.textContent = 'That name is already taken — try a different one.'; return;
+  }
+  const idx = gs.slots.findIndex(s=>!s.name);
+  gs.slots[idx].name = name;
+  if (!gs.adminName) gs.adminName = name;
+  if (isConfigured) {
+    try { await dbSave(); } catch(e) { errEl.textContent = 'Could not save — check your Supabase config.'; return; }
+  }
+  myName = name;
+  mySlot = idx;
+  sessionStorage.setItem('wc2026_me', JSON.stringify({ name }));
+  rerender();
+}
+
+// ── Lobby ─────────────────────────────────────────────────────────────────────
+function renderLobby() {
+  renderSlotsGrid('slots-grid-lobby');
+  const taken = gs.slots.filter(s=>s.name).length;
+  document.getElementById('slot-count-lobby').textContent = taken+' / 12';
+
+  const actionsEl = document.getElementById('lobby-actions');
+  const statusEl  = document.getElementById('lobby-status');
+  const isAdmin   = myName === gs.adminName;
+
+  if (gs.phase === 'joining') {
+    if (isAdmin) {
+      actionsEl.innerHTML = `
+        <button class="btn btn-green" onclick="startSpinning()" ${taken<2?'disabled':''}>
+          ${taken===12 ? 'Everyone\'s in — Start Spinning! 🎉' : 'Start with '+taken+' players →'}
+        </button>
+        <p style="font-size:0.75rem;color:rgba(255,255,255,0.35);margin-top:0.5rem;">
+          You're the host <span class="admin-badge">host</span> — start whenever everyone is ready. You can start with fewer than 12.
+        </p>`;
+    } else {
+      actionsEl.innerHTML = `<p style="font-size:0.82rem;color:rgba(255,255,255,0.4);">Waiting for <strong style="color:rgba(255,255,255,0.7);">${escHtml(gs.adminName)}</strong> to start the sweepstake…</p>`;
+    }
+    statusEl.innerHTML = '';
+  } else if (gs.phase === 'spinning') {
+    actionsEl.innerHTML = '';
+    const myTeams = gs.slots[mySlot].assignments;
+    const myNext  = gs.slots[mySlot].nextTier;
+    if (myNext <= 4) {
+      statusEl.innerHTML = `<div class="info-box" style="border-color:rgba(37,99,235,0.3);background:rgba(37,99,235,0.07);">
+        🎯 It's your turn! Go to the <strong>My Spin</strong> tab to spin for ${TIER_NAMES[myNext-1]}.
+      </div>`;
+    } else {
+      statusEl.innerHTML = `<div class="info-box" style="border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.07);">
+        ✅ You've spun all 4 tiers! Check the <strong>Results</strong> tab to see everyone's teams.
+      </div>`;
+    }
+    if (isAdmin) {
+      actionsEl.innerHTML += `<div style="margin-top:0.75rem;"><button class="btn btn-danger" onclick="resetAll()">Reset sweepstake</button></div>`;
+    }
+  } else if (gs.phase === 'done') {
+    actionsEl.innerHTML = isAdmin ? `<button class="btn btn-danger" onclick="resetAll()">Reset sweepstake</button>` : '';
+    statusEl.innerHTML = `<div class="complete-banner"><h2>🎉 Sweepstake complete!</h2><p>All teams have been drawn. Check the Results tab.</p></div>`;
+  }
+}
+
+function renderSlotsGrid(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  let html = '';
+  gs.slots.forEach((slot, i) => {
+    if (!slot.name) {
+      html += `<div class="slot empty"><span class="slot-num">${i+1}</span> Open</div>`;
+    } else if (slot.name === myName) {
+      html += `<div class="slot mine"><span class="slot-num">${i+1}</span> ${escHtml(slot.name)} (you)</div>`;
+    } else {
+      html += `<div class="slot taken"><span class="slot-num">${i+1}</span> ${escHtml(slot.name)}</div>`;
+    }
+  });
+  el.innerHTML = html;
+}
+
+async function startSpinning() {
+  if (gs.phase !== 'joining') return;
+  gs.phase = 'spinning';
+  if (isConfigured) await dbSave();
+  rerender();
+  showTab('spin');
+}
+
+// ── Spin ──────────────────────────────────────────────────────────────────────
+function renderSpinUI() {
+  const el = document.getElementById('spin-ui');
+  if (!el) return;
+
+  if (gs.phase === 'joining') {
+    el.innerHTML = `<div class="waiting-screen"><div class="big">⏳</div><h2>Waiting to start</h2><p>The host hasn't started the sweepstake yet.<br>Check back on the Lobby tab.</p></div>`;
+    return;
+  }
+
+  const slot = gs.slots[mySlot];
+  const nextTier = slot.nextTier;
+
+  if (nextTier > 4) {
+    // All done — show my teams
+    el.innerHTML = `
+      <div class="complete-banner" style="margin-bottom:1rem;"><h2>✅ All your teams are in!</h2><p>Here's what you got:</p></div>
+      <div class="my-teams">${slot.assignments.map((t,i)=>`
+        <div class="my-team-card">
+          <div class="tc-tier">${TIER_NAMES[i]}</div>
+          <div class="tc-name">${t.flag} ${t.name}</div>
+        </div>`).join('')}
+      </div>`;
+    return;
+  }
+
+  const teams = gs.remainingByTier[nextTier];
+  const done  = nextTier - 1;
+
+  el.innerHTML = `
+    <div class="spin-area">
+      <div class="label">Spinning for</div>
+      <div class="tier-title" style="color:${TIER_COLORS[nextTier-1]}">${TIER_NAMES[nextTier-1]}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.round((done/4)*100)}%"></div></div>
+      ${done > 0 ? `<div class="my-teams" style="margin-bottom:1.25rem;">${slot.assignments.map((t,i)=>`
+        <div class="my-team-card">
+          <div class="tc-tier">${TIER_NAMES[i]}</div>
+          <div class="tc-name">${t.flag} ${t.name}</div>
+        </div>`).join('')}</div>` : ''}
+      <div class="wheel-wrap">
+        <canvas id="wheel" width="320" height="320"></canvas>
+        <div class="pointer"></div>
+      </div>
+      <button class="spin-btn" id="spin-btn" onclick="doSpin()">SPIN ⚽</button>
+      <div id="result-area" style="margin-top:1rem;"></div>
+    </div>`;
+  drawWheel(teams, spinAngle);
+}
+
+function drawWheel(teams, angle) {
+  const canvas = document.getElementById('wheel');
+  if (!canvas || !teams.length) return;
+  const ctx = canvas.getContext('2d');
+  const cx=160, cy=160, r=152;
+  ctx.clearRect(0,0,320,320);
+  const slice = (2*Math.PI)/teams.length;
+  const slot = gs.slots[mySlot];
+  const tierIdx = (slot.nextTier||1) - 1;
+  const cols = [['#b45309','#d97706'],['#334155','#475569'],['#78350f','#92400e'],['#3b0764','#4c1d95']];
+  const [c1,c2] = cols[tierIdx] || cols[0];
+  teams.forEach((team,i) => {
+    const s=angle+i*slice-Math.PI/2, e=s+slice;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,s,e); ctx.closePath();
+    ctx.fillStyle = i%2===0?c1:c2; ctx.fill();
+    ctx.strokeStyle='#0a1628'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(s+slice/2);
+    ctx.textAlign='right'; ctx.fillStyle='#fff';
+    ctx.font = teams.length>8?'bold 10px sans-serif':'bold 12px sans-serif';
+    ctx.shadowColor='rgba(0,0,0,0.6)'; ctx.shadowBlur=3;
+    const lbl = team.flag+' '+(team.name.length>12?team.name.substring(0,11)+'…':team.name);
+    ctx.fillText(lbl, r-6, 4); ctx.restore();
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,20,0,2*Math.PI);
+  ctx.fillStyle='#0a1628'; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=2; ctx.stroke();
+}
+
+function doSpin() {
+  const slot = gs.slots[mySlot];
+  if (!slot || slot.nextTier > 4) return;
+  const teams = gs.remainingByTier[slot.nextTier];
+  if (!teams.length) return;
+  document.getElementById('spin-btn').disabled = true;
+  const totalAngle = (5+Math.random()*4)*2*Math.PI + Math.floor(Math.random()*teams.length)*((2*Math.PI)/teams.length);
+  const dur=3500, start=performance.now(), startAngle=spinAngle;
+  function ease(t){return 1-Math.pow(1-t,4);}
+  function animate(now) {
+    const t=Math.min((now-start)/dur,1);
+    spinAngle=startAngle+totalAngle*ease(t);
+    drawWheel(teams,spinAngle);
+    if(t<1) requestAnimationFrame(animate); else finishSpin(teams,spinAngle,(2*Math.PI)/teams.length);
+  }
+  requestAnimationFrame(animate);
+}
+
+async function finishSpin(teams, finalAngle, slice) {
+  const norm = (((-finalAngle%(2*Math.PI))+(2*Math.PI))%(2*Math.PI));
+  const idx  = Math.floor(norm/slice)%teams.length;
+  const team = teams[idx];
+  const slot = gs.slots[mySlot];
+
+  // Refresh state first to avoid race conditions with other players
+  if (isConfigured) { try { await dbLoad(); } catch(e){} }
+
+  // Re-find slot after reload
+  mySlot = gs.slots.findIndex(s=>s.name===myName);
+  const freshSlot = gs.slots[mySlot];
+
+  // Remove team from remaining
+  const tierKey = freshSlot.nextTier;
+  gs.remainingByTier[tierKey] = gs.remainingByTier[tierKey].filter(t=>t.name!==team.name);
+  freshSlot.assignments.push(team);
+  freshSlot.nextTier++;
+
+  // Check if everyone is done
+  const allDone = gs.slots.filter(s=>s.name).every(s=>s.nextTier>4);
+  if (allDone) gs.phase = 'done';
+
+  if (isConfigured) await dbSave();
+
+  const resultArea = document.getElementById('result-area');
+  resultArea.innerHTML = `
+    <div class="result-banner">
+      <div style="font-size:0.82rem;color:rgba(255,255,255,0.5);">You got...</div>
+      <div class="team-name">${team.flag} ${team.name}</div>
+      <span class="tier-badge ${TIER_BADGE[tierKey-1]}">${TIER_NAMES[tierKey-1]}</span>
+    </div>
+    ${freshSlot.nextTier<=4
+      ? `<button class="btn btn-primary" style="margin-top:1rem;" onclick="nextTier()">Spin Tier ${freshSlot.nextTier} →</button>`
+      : `<button class="btn btn-green" style="margin-top:1rem;" onclick="showTab('results')">See all results →</button>`
+    }`;
+}
+
+function nextTier() {
+  spinAngle = 0;
+  renderSpinUI();
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+async function renderResults() {
+  if (isConfigured) { try { await dbLoad(); setSyncDot('synced'); } catch(e){ setSyncDot('error'); } }
+  const el = document.getElementById('results-ui');
+  if (!el) return;
+  const activePlayers = gs.slots.filter(s=>s.name);
+  if (!activePlayers.length) {
+    el.innerHTML = `<div style="text-align:center;padding:2rem;color:rgba(255,255,255,0.3);">No results yet.</div>`;
+    return;
+  }
+  const allDone = activePlayers.every(s=>s.nextTier>4);
+  let html = allDone ? `<div class="complete-banner"><h2>🎉 Sweepstake complete!</h2><p>All teams drawn.</p></div>` : '';
+  html += `<table class="results-table"><thead><tr><th>Player</th><th>Tier 1</th><th>Tier 2</th><th>Tier 3</th><th>Tier 4</th></tr></thead><tbody>`;
+  activePlayers.forEach(s => {
+    html += `<tr><td style="font-weight:600;color:${s.name===myName?'#34d399':'#60a5fa'}">${escHtml(s.name)}${s.name===myName?' ✦':''}</td>`;
+    for(let t=0;t<4;t++){
+      const team=s.assignments[t];
+      html += team ? `<td>${team.flag} ${team.name}</td>` : `<td style="color:rgba(255,255,255,0.2)">—</td>`;
+    }
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  el.innerHTML = html;
+}
+
+// ── Teams ─────────────────────────────────────────────────────────────────────
+function renderTeams() {
+  const el = document.getElementById('teams-ui');
+  if (!el) return;
+  const allAssigned = gs.slots.flatMap(s=>s.assignments||[]);
+  let html='';
+  [1,2,3,4].forEach(tier=>{
+    html+=`<h3 style="font-size:0.82rem;font-weight:600;color:${TIER_COLORS[tier-1]};margin:1rem 0 0.5rem;letter-spacing:0.05em;text-transform:uppercase;">${TIER_NAMES[tier-1]}</h3><div class="teams-grid">`;
+    ALL_TEAMS.filter(t=>t.tier===tier).forEach(team=>{
+      const owner=gs.slots.find(s=>(s.assignments||[]).some(a=>a.name===team.name));
+      html+=`<div class="team-card"><div><span class="team-rank">#${team.rank}</span>${team.flag} ${team.name}</div>${owner?`<span style="font-size:0.68rem;color:rgba(255,255,255,0.35);">${escHtml(owner.name)}</span>`:''}</div>`;
+    });
+    html+=`</div>`;
+  });
+  el.innerHTML=html;
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+async function resetAll() {
+  if (!confirm('Reset the entire sweepstake? Everyone will need to rejoin.')) return;
+  gs = {
+    phase:'joining',
+    slots: Array(12).fill(null).map(()=>({name:null,assignments:[],nextTier:1})),
+    remainingByTier:{
+      1:ALL_TEAMS.filter(t=>t.tier===1),
+      2:ALL_TEAMS.filter(t=>t.tier===2),
+      3:ALL_TEAMS.filter(t=>t.tier===3),
+      4:ALL_TEAMS.filter(t=>t.tier===4),
+    },
+    adminName:null,
+  };
+  myName=null; mySlot=null; spinAngle=0;
+  sessionStorage.removeItem('wc2026_me');
+  if (isConfigured) await dbSave();
+  rerender();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>
