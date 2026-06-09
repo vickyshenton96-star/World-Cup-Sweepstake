@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Cup 2026 Sweepstake</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a1628; color: #fff; min-height: 100vh; }
+
+  header { background: #0d1f3c; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
+  header .trophy { font-size: 1.8rem; }
+  header h1 { font-size: 1.2rem; font-weight: 600; letter-spacing: 0.02em; }
+  header p { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; margin-left: auto; flex-shrink: 0; transition: background 0.3s; }
+  .sync-dot.synced { background: #34d399; }
+  .sync-dot.syncing { background: #fbbf24; animation: pulse 1s infinite; }
+  .sync-dot.error { background: #f87171; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+
+  .tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 4px; margin-bottom: 1.5rem; }
+  .tab { flex: 1; padding: 0.55rem; border: none; background: transparent; color: rgba(255,255,255,0.5); border-radius: 7px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.15s; }
+  .tab.active { background: #1e3a6e; color: #fff; }
+
+  .name-entry { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .name-entry h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+  .name-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-bottom: 1rem; }
+  .name-input { width: 100%; padding: 0.5rem 0.7rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; color: #fff; font-size: 0.85rem; outline: none; transition: border-color 0.15s; }
+  .name-input:focus { border-color: rgba(255,255,255,0.35); }
+  .name-input::placeholder { color: rgba(255,255,255,0.3); }
+  .slot-label { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+
+  .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-danger { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .btn-danger:hover { background: rgba(239,68,68,0.3); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .spin-area { text-align: center; padding: 1rem 0; }
+  .spin-area h2 { font-size: 1rem; color: rgba(255,255,255,0.7); margin-bottom: 0.25rem; }
+  .spin-area .current-player { font-size: 1.5rem; font-weight: 700; color: #60a5fa; margin-bottom: 1.5rem; }
+
+  .wheel-wrap { position: relative; width: 340px; height: 340px; margin: 0 auto 1.5rem; }
+  canvas#wheel { border-radius: 50%; display: block; }
+  .pointer { position: absolute; top: 50%; left: 50%; width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 36px solid #fff; transform: translate(-50%, -90%) rotate(0deg); filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); pointer-events: none; }
+  .spin-btn { font-size: 1rem; padding: 0.75rem 2.5rem; background: linear-gradient(135deg, #2563eb, #7c3aed); border: none; border-radius: 50px; color: #fff; cursor: pointer; font-weight: 700; letter-spacing: 0.04em; box-shadow: 0 4px 20px rgba(37,99,235,0.4); transition: all 0.15s; }
+  .spin-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(37,99,235,0.5); }
+  .spin-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .result-banner { background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(124,58,237,0.25)); border: 1px solid rgba(99,102,241,0.4); border-radius: 12px; padding: 1rem 1.5rem; margin: 1rem auto; max-width: 400px; text-align: center; }
+  .result-banner .team-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .result-banner .tier-badge { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.05em; }
+  .tier1-badge { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+  .tier2-badge { background: rgba(148,163,184,0.2); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
+  .tier3-badge { background: rgba(180,83,9,0.2); color: #d97706; border: 1px solid rgba(180,83,9,0.3); }
+  .tier4-badge { background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+
+  .results-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .results-table th { text-align: left; padding: 0.5rem 0.75rem; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .results-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .results-table tr:last-child td { border-bottom: none; }
+
+  .teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .team-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.6rem 0.8rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; }
+  .team-rank { font-size: 0.7rem; color: rgba(255,255,255,0.35); margin-right: 6px; }
+
+  .progress-bar { background: rgba(255,255,255,0.08); border-radius: 4px; height: 6px; margin: 0.75rem 0; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #2563eb, #7c3aed); border-radius: 4px; transition: width 0.4s ease; }
+
+  .info-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.6; }
+  .info-box strong { color: rgba(255,255,255,0.85); }
+  .info-box code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.85em; color: #93c5fd; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: rgba(255,255,255,0.3); }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+  .complete-banner { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(5,150,105,0.2)); border: 1px solid rgba(16,185,129,0.4); border-radius: 12px; padding: 1.2rem 1.5rem; text-align: center; margin-bottom: 1.5rem; }
+  .complete-banner h2 { font-size: 1.1rem; color: #34d399; margin-bottom: 0.25rem; }
+  .complete-banner p { font-size: 0.8rem; color: rgba(255,255,255,0.5); }
+
+  .config-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .config-box h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .config-box p { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 1rem; line-height: 1.6; }
+  .config-row { margin-bottom: 0.75rem; }
+  .config-row label { display: block; font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-bottom: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .config-input { width: 100%; padding: 0.55rem 0.75rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; color: #fff; font-size: 0.82rem; font-family: monospace; outline: none; }
+  .config-input:focus { border-color: rgba(99,102,241,0.6); }
+  .config-status { font-size: 0.75rem; margin-top: 0.5rem; min-height: 1.2em; }
+  .config-status.ok { color: #34d399; }
+  .config-status.err { color: #f87171; }
+  .config-status.checking { color: #fbbf24; }
+
+  .loading-overlay { position: fixed; inset: 0; background: rgba(10,22,40,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .loading-overlay p { color: rgba(255,255,255,0.6); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay" class="loading-overlay">
+  <p>Loading sweepstake...</p>
+</div>
+
+<header>
+  <div class="trophy">🏆</div>
+  <div>
+    <h1>World Cup 2026 Sweepstake</h1>
+    <p>48 teams · 12 players · 4 teams each</p>
+  </div>
+  <div id="sync-dot" class="sync-dot" title="Sync status"></div>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('setup')">Setup</button>
+    <button class="tab" onclick="showTab('spin')">Spin</button>
+    <button class="tab" onclick="showTab('results')">Results</button>
+    <button class="tab" onclick="showTab('teams')">All Teams</button>
+  </div>
+
+  <div id="tab-setup">
+    <div id="config-section"></div>
+    <div id="setup-section"></div>
+  </div>
+
+  <div id="tab-spin" style="display:none;">
+    <div id="spin-ui"></div>
+  </div>
+
+  <div id="tab-results" style="display:none;">
+    <div id="results-ui"></div>
+  </div>
+
+  <div id="tab-teams" style="display:none;">
+    <div id="teams-ui"></div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIGURATION — paste your Supabase credentials here ───────────────────
+const SUPABASE_URL = 'https://jdumyutfurebxywujeen.supabase.co';   // e.g. https://abcdefgh.supabase.co
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkdW15dXRmdXJlYnh5d3VqZWVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5OTYyMDcsImV4cCI6MjA5NjU3MjIwN30.0mLF0d5YJS549ukWI5hgBJGz2Y-J4pGNORf4cz0aREs';      // long string starting with "eyJ..."
+// ────────────────────────────────────────────────────────────────────────────
+
+const ALL_TEAMS = [
+  { rank: 1,  name: "France",       flag: "🇫🇷", tier: 1 },
+  { rank: 2,  name: "Spain",        flag: "🇪🇸", tier: 1 },
+  { rank: 3,  name: "Argentina",    flag: "🇦🇷", tier: 1 },
+  { rank: 4,  name: "England",      flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", tier: 1 },
+  { rank: 5,  name: "Portugal",     flag: "🇵🇹", tier: 1 },
+  { rank: 6,  name: "Brazil",       flag: "🇧🇷", tier: 1 },
+  { rank: 7,  name: "Netherlands",  flag: "🇳🇱", tier: 1 },
+  { rank: 8,  name: "Morocco",      flag: "🇲🇦", tier: 1 },
+  { rank: 9,  name: "Belgium",      flag: "🇧🇪", tier: 1 },
+  { rank: 10, name: "Germany",      flag: "🇩🇪", tier: 1 },
+  { rank: 11, name: "Croatia",      flag: "🇭🇷", tier: 1 },
+  { rank: 12, name: "Colombia",     flag: "🇨🇴", tier: 1 },
+  { rank: 13, name: "Senegal",      flag: "🇸🇳", tier: 2 },
+  { rank: 14, name: "Mexico",       flag: "🇲🇽", tier: 2 },
+  { rank: 15, name: "USA",          flag: "🇺🇸", tier: 2 },
+  { rank: 16, name: "Uruguay",      flag: "🇺🇾", tier: 2 },
+  { rank: 17, name: "Japan",        flag: "🇯🇵", tier: 2 },
+  { rank: 18, name: "Switzerland",  flag: "🇨🇭", tier: 2 },
+  { rank: 19, name: "Iran",         flag: "🇮🇷", tier: 2 },
+  { rank: 20, name: "Turkey",       flag: "🇹🇷", tier: 2 },
+  { rank: 21, name: "Ecuador",      flag: "🇪🇨", tier: 2 },
+  { rank: 22, name: "Austria",      flag: "🇦🇹", tier: 2 },
+  { rank: 23, name: "South Korea",  flag: "🇰🇷", tier: 2 },
+  { rank: 24, name: "Australia",    flag: "🇦🇺", tier: 2 },
+  { rank: 25, name: "Algeria",      flag: "🇩🇿", tier: 3 },
+  { rank: 26, name: "Egypt",        flag: "🇪🇬", tier: 3 },
+  { rank: 27, name: "Canada",       flag: "🇨🇦", tier: 3 },
+  { rank: 28, name: "Norway",       flag: "🇳🇴", tier: 3 },
+  { rank: 29, name: "Panama",       flag: "🇵🇦", tier: 3 },
+  { rank: 30, name: "Ivory Coast",  flag: "🇨🇮", tier: 3 },
+  { rank: 31, name: "Sweden",       flag: "🇸🇪", tier: 3 },
+  { rank: 32, name: "Paraguay",     flag: "🇵🇾", tier: 3 },
+  { rank: 33, name: "Czechia",      flag: "🇨🇿", tier: 3 },
+  { rank: 34, name: "Scotland",     flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", tier: 3 },
+  { rank: 35, name: "Tunisia",      flag: "🇹🇳", tier: 3 },
+  { rank: 36, name: "DR Congo",     flag: "🇨🇩", tier: 3 },
+  { rank: 37, name: "Uzbekistan",   flag: "🇺🇿", tier: 4 },
+  { rank: 38, name: "Qatar",        flag: "🇶🇦", tier: 4 },
+  { rank: 39, name: "Iraq",         flag: "🇮🇶", tier: 4 },
+  { rank: 40, name: "South Africa", flag: "🇿🇦", tier: 4 },
+  { rank: 41, name: "Saudi Arabia", flag: "🇸🇦", tier: 4 },
+  { rank: 42, name: "Jordan",       flag: "🇯🇴", tier: 4 },
+  { rank: 43, name: "Bosnia & Herz.",flag:"🇧🇦", tier: 4 },
+  { rank: 44, name: "Cape Verde",   flag: "🇨🇻", tier: 4 },
+  { rank: 45, name: "Ghana",        flag: "🇬🇭", tier: 4 },
+  { rank: 46, name: "Curacao",      flag: "🇨🇼", tier: 4 },
+  { rank: 47, name: "Haiti",        flag: "🇭🇹", tier: 4 },
+  { rank: 48, name: "New Zealand",  flag: "🇳🇿", tier: 4 },
+];
+
+const TIER_COLORS = ['#fbbf24','#94a3b8','#d97706','#a78bfa'];
+const TIER_NAMES  = ['Tier 1 (Top 12)','Tier 2 (13–24)','Tier 3 (25–36)','Tier 4 (37–48)'];
+const TIER_BADGE  = ['tier1-badge','tier2-badge','tier3-badge','tier4-badge'];
+
+let state = {
+  players: [],
+  assignments: {},
+  remainingByTier: null,
+  currentPlayerIdx: 0,
+  currentTier: 1,
+  spinning: false,
+  started: false,
+};
+
+const isConfigured = SUPABASE_URL !== 'YOUR_PROJECT_URL' && SUPABASE_KEY !== 'YOUR_ANON_KEY';
+
+// ── Supabase helpers ──────────────────────────────────────────────────────────
+function sbHeaders() {
+  return { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+}
+
+async function loadFromSupabase() {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/sweepstake?id=eq.main&select=state', { headers: sbHeaders() });
+  if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+  const rows = await res.json();
+  if (rows.length && rows[0].state && Object.keys(rows[0].state).length) {
+    state = { ...state, ...rows[0].state };
+  }
+}
+
+async function saveToSupabase() {
+  setSyncDot('syncing');
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/sweepstake?id=eq.main', {
+      method: 'PATCH',
+      headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ state, updated_at: new Date().toISOString() }),
+    });
+    if (!res.ok) throw new Error('Save failed: ' + res.status);
+    setSyncDot('synced');
+  } catch(e) {
+    setSyncDot('error');
+    console.error(e);
+  }
+}
+
+function setSyncDot(status) {
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-dot ' + status;
+  dot.title = { synced: 'Saved to cloud', syncing: 'Saving...', error: 'Save failed', '': 'Not configured' }[status] || '';
+}
+
+async function saveState() {
+  if (isConfigured) {
+    await saveToSupabase();
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  if (isConfigured) {
+    try {
+      await loadFromSupabase();
+      setSyncDot('synced');
+    } catch(e) {
+      setSyncDot('error');
+      console.error('Could not load from Supabase:', e);
+    }
+  } else {
+    setSyncDot('');
+  }
+  document.getElementById('loading-overlay').style.display = 'none';
+  renderSetupTab();
+  if (state.started) buildNameGrid();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  ['setup','spin','results','teams'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['setup','spin','results','teams'][i] === tab);
+  });
+  if (tab === 'spin')    renderSpinUI();
+  if (tab === 'results') renderResults();
+  if (tab === 'teams')   renderTeams();
+}
+
+// ── Setup tab ─────────────────────────────────────────────────────────────────
+function renderSetupTab() {
+  const configEl = document.getElementById('config-section');
+  if (!isConfigured) {
+    configEl.innerHTML = `
+      <div class="info-box" style="border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.06);">
+        <strong>⚠️ Supabase not configured</strong><br>
+        Open <code>index.html</code>, find the two lines near the top of the script, and replace <code>YOUR_PROJECT_URL</code> and <code>YOUR_ANON_KEY</code> with your Supabase credentials. State will not be shared across devices until you do.
+      </div>`;
+  } else {
+    configEl.innerHTML = '';
+  }
+
+  const setupEl = document.getElementById('setup-section');
+  setupEl.innerHTML = `
+    <div class="info-box">
+      <strong>How it works:</strong> Enter 12 player names below. Each player spins once per tier, getting one team from each group. Tier 1 = top 12, Tier 2 = 13–24, Tier 3 = 25–36, Tier 4 = 37–48. Everyone gets a mix of strong and underdog teams!${isConfigured ? ' <strong>All spins are saved to the cloud</strong> — anyone with the link sees live results.' : ''}
+    </div>
+    <div class="name-entry">
+      <h2>Player names</h2>
+      <div class="name-grid" id="name-grid"></div>
+      <button class="btn btn-primary" onclick="startSweepstake()">Start Sweepstake →</button>
+    </div>`;
+  buildNameGrid();
+}
+
+function buildNameGrid() {
+  const grid = document.getElementById('name-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const wrap = document.createElement('div');
+    const label = document.createElement('div');
+    label.className = 'slot-label';
+    label.textContent = 'Player ' + (i+1);
+    const input = document.createElement('input');
+    input.className = 'name-input';
+    input.type = 'text';
+    input.placeholder = 'Name ' + (i+1);
+    input.value = state.players[i] || '';
+    input.id = 'player-input-' + i;
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+    grid.appendChild(wrap);
+  }
+}
+
+async function startSweepstake() {
+  const players = [];
+  for (let i = 0; i < 12; i++) {
+    const val = document.getElementById('player-input-' + i).value.trim();
+    players.push(val || 'Player ' + (i+1));
+  }
+  state.players = players;
+  state.assignments = {};
+  players.forEach(p => state.assignments[p] = []);
+  state.remainingByTier = {
+    1: [...ALL_TEAMS.filter(t => t.tier === 1)],
+    2: [...ALL_TEAMS.filter(t => t.tier === 2)],
+    3: [...ALL_TEAMS.filter(t => t.tier === 3)],
+    4: [...ALL_TEAMS.filter(t => t.tier === 4)],
+  };
+  state.currentPlayerIdx = 0;
+  state.currentTier = 1;
+  state.spinning = false;
+  state.started = true;
+  await saveState();
+  showTab('spin');
+}
+
+// ── Spin helpers ──────────────────────────────────────────────────────────────
+function getCurrentPlayer() {
+  if (!state.players.length) return null;
+  return state.players[state.currentPlayerIdx] || null;
+}
+
+function getTierWheelTeams() {
+  if (!state.remainingByTier) return [];
+  return state.remainingByTier[state.currentTier] || [];
+}
+
+function isAllDone() {
+  if (!state.assignments || !state.players.length) return false;
+  return state.players.every(p => (state.assignments[p] || []).length >= 4);
+}
+
+function getSpinProgress() {
+  const total = (state.players.length || 12) * 4;
+  const done = (state.currentPlayerIdx || 0) * 4 + ((state.currentTier || 1) - 1);
+  return { spin: done + 1, total, done };
+}
+
+let spinAngle = 0;
+
+function renderSpinUI() {
+  const el = document.getElementById('spin-ui');
+  if (!state.started) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">⚽</div><p>Enter player names on the Setup tab first.</p></div>`;
+    return;
+  }
+  if (isAllDone()) {
+    el.innerHTML = `<div class="complete-banner"><h2>🎉 All teams assigned!</h2><p>Head to the Results tab to see who got what.</p></div>`;
+    return;
+  }
+
+  const player = getCurrentPlayer();
+  const tierTeams = getTierWheelTeams();
+  const progress = getSpinProgress();
+
+  el.innerHTML = `
+    <div class="spin-area">
+      <h2>Now spinning for</h2>
+      <div class="current-player">${escHtml(player)}</div>
+      <div class="info-box" style="max-width:360px;margin:0 auto 1rem;text-align:left;">
+        <strong>${TIER_NAMES[state.currentTier-1]}</strong> — ${tierTeams.length} teams remaining<br>
+        <small style="color:rgba(255,255,255,0.4)">Spin ${progress.spin} of ${progress.total}</small>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.round((progress.done/progress.total)*100)}%"></div></div>
+      <div class="wheel-wrap">
+        <canvas id="wheel" width="340" height="340"></canvas>
+        <div class="pointer"></div>
+      </div>
+      <button class="spin-btn" id="spin-btn" onclick="doSpin()">SPIN ⚽</button>
+      <div id="result-area" style="margin-top:1rem;"></div>
+    </div>`;
+  drawWheel(tierTeams, spinAngle);
+}
+
+function drawWheel(teams, angle) {
+  const canvas = document.getElementById('wheel');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 170, cy = 170, r = 162;
+  ctx.clearRect(0, 0, 340, 340);
+  if (!teams.length) return;
+  const slice = (2 * Math.PI) / teams.length;
+  const tierIdx = state.currentTier - 1;
+  const baseColor = ['#b45309','#475569','#92400e','#4c1d95'][tierIdx];
+  const altColor  = ['#d97706','#64748b','#b45309','#6d28d9'][tierIdx];
+  teams.forEach((team, i) => {
+    const start = angle + i * slice - Math.PI / 2;
+    const end = start + slice;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, end);
+    ctx.closePath();
+    ctx.fillStyle = i % 2 === 0 ? baseColor : altColor;
+    ctx.fill();
+    ctx.strokeStyle = '#0a1628';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + slice / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#fff';
+    ctx.font = teams.length > 8 ? 'bold 11px sans-serif' : 'bold 13px sans-serif';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 3;
+    const label = team.flag + ' ' + (team.name.length > 12 ? team.name.substring(0,11)+'…' : team.name);
+    ctx.fillText(label, r - 8, 4);
+    ctx.restore();
+  });
+  ctx.beginPath();
+  ctx.arc(cx, cy, 22, 0, 2 * Math.PI);
+  ctx.fillStyle = '#0a1628';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function doSpin() {
+  if (state.spinning) return;
+  const teams = getTierWheelTeams();
+  if (!teams.length) return;
+  document.getElementById('spin-btn').disabled = true;
+  state.spinning = true;
+  const totalSpins = 5 + Math.random() * 4;
+  const extra = Math.floor(Math.random() * teams.length);
+  const slice = (2 * Math.PI) / teams.length;
+  const totalAngle = totalSpins * 2 * Math.PI + extra * slice;
+  const duration = 3500;
+  const start = performance.now();
+  const startAngle = spinAngle;
+  function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
+  function animate(now) {
+    const t = Math.min((now - start) / duration, 1);
+    spinAngle = startAngle + totalAngle * easeOut(t);
+    drawWheel(teams, spinAngle);
+    if (t < 1) { requestAnimationFrame(animate); }
+    else { finishSpin(teams, spinAngle, slice); }
+  }
+  requestAnimationFrame(animate);
+}
+
+async function finishSpin(teams, finalAngle, slice) {
+  const norm = (((-finalAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI));
+  const idx = Math.floor(norm / slice) % teams.length;
+  const team = teams[idx];
+  const player = getCurrentPlayer();
+  state.assignments[player].push(team);
+  state.remainingByTier[state.currentTier].splice(
+    state.remainingByTier[state.currentTier].findIndex(t => t.name === team.name), 1
+  );
+  state.spinning = false;
+  await saveState();
+
+  const resultArea = document.getElementById('result-area');
+  resultArea.innerHTML = `
+    <div class="result-banner">
+      <div>${escHtml(player)} gets...</div>
+      <div class="team-name">${team.flag} ${team.name}</div>
+      <span class="tier-badge ${TIER_BADGE[state.currentTier-1]}">${TIER_NAMES[state.currentTier-1]}</span>
+    </div>
+    <button class="btn btn-primary" style="margin-top:1rem;" onclick="nextSpin()">Next →</button>`;
+}
+
+async function nextSpin() {
+  if (state.currentTier < 4) { state.currentTier++; }
+  else { state.currentPlayerIdx++; state.currentTier = 1; }
+  spinAngle = 0;
+  await saveState();
+  renderSpinUI();
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+function renderResults() {
+  const el = document.getElementById('results-ui');
+  if (!state.players.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>No results yet — start the sweepstake first.</p></div>`;
+    return;
+  }
+  let html = '';
+  if (isAllDone()) {
+    html += `<div class="complete-banner"><h2>🎉 Sweepstake complete!</h2><p>All 48 teams assigned across 12 players.</p></div>`;
+  }
+  html += `<table class="results-table"><thead><tr><th>Player</th><th>Tier 1</th><th>Tier 2</th><th>Tier 3</th><th>Tier 4</th></tr></thead><tbody>`;
+  state.players.forEach(p => {
+    const teams = state.assignments[p] || [];
+    html += `<tr><td style="font-weight:600;color:#60a5fa">${escHtml(p)}</td>`;
+    for (let t = 0; t < 4; t++) {
+      const team = teams[t];
+      html += team ? `<td>${team.flag} ${team.name}</td>` : `<td style="color:rgba(255,255,255,0.2)">—</td>`;
+    }
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  if (state.started) {
+    html += `<div style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="refreshResults()">↻ Refresh</button>
+      <button class="btn btn-danger" onclick="resetAll()">Reset sweepstake</button>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+async function refreshResults() {
+  if (!isConfigured) return;
+  setSyncDot('syncing');
+  try {
+    await loadFromSupabase();
+    setSyncDot('synced');
+    renderResults();
+  } catch(e) { setSyncDot('error'); }
+}
+
+// ── Teams ─────────────────────────────────────────────────────────────────────
+function renderTeams() {
+  const el = document.getElementById('teams-ui');
+  let html = '';
+  [1,2,3,4].forEach(tier => {
+    const teams = ALL_TEAMS.filter(t => t.tier === tier);
+    html += `<h3 style="font-size:0.85rem;font-weight:600;color:${TIER_COLORS[tier-1]};margin:1rem 0 0.5rem;letter-spacing:0.05em;text-transform:uppercase;">${TIER_NAMES[tier-1]}</h3>`;
+    html += `<div class="teams-grid">`;
+    teams.forEach(team => {
+      const assigned = Object.entries(state.assignments || {}).find(([,v]) => v.some(t => t.name === team.name));
+      html += `<div class="team-card">
+        <div><span class="team-rank">#${team.rank}</span>${team.flag} ${team.name}</div>
+        ${assigned ? `<span style="font-size:0.7rem;color:rgba(255,255,255,0.4);">${escHtml(assigned[0])}</span>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+async function resetAll() {
+  if (!confirm('Reset the entire sweepstake? This cannot be undone.')) return;
+  state = { players: [], assignments: {}, remainingByTier: null, currentPlayerIdx: 0, currentTier: 1, spinning: false, started: false };
+  await saveState();
+  renderSetupTab();
+  showTab('setup');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+</script>
+</body>
+</html>
